@@ -74,6 +74,19 @@
           <release>${java.version}</release>
         </configuration>
       </plugin>
+      <plugin>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-maven-plugin</artifactId>
+  <version>3.3.3</version>
+  <configuration>
+    <layers enabled="true"/>
+    <mainClass>com.example.voiceauthrest.VoiceAuthRestApplication</mainClass>
+  </configuration>
+  <executions>
+    <execution><goals><goal>repackage</goal></goals></execution>
+  </executions>
+</plugin>
+
     </plugins>
   </build>
 </project>
