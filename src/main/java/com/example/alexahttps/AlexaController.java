@@ -30,6 +30,10 @@ public class AlexaController {
   public ResponseEntity<byte[]> handle(@RequestHeader("Signature") String signature,
                                        @RequestHeader("SignatureCertChainUrl") String certUrl,
                                        @RequestBody byte[] body) throws Exception {
+
+    org.slf4j.LoggerFactory.getLogger(AlexaController.class)
+            .info("Incoming Alexa request received");
+
     // 1) Verify Amazon signature + timestamp + applicationId
     verifier.verify(certUrl, signature, body);
     verifier.assertAppAndTimestamp(body);
