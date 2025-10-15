@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoiceAuth REST Demo</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="container">
+  <h1>VoiceAuth REST (Demo)</h1>
+  <section class="card">
+    <h2>1) PIN setzen</h2>
+    <div class="row"><input id="pin" placeholder="PIN (z.B. 1234)"><button id="btnPin">Setzen</button></div>
+  </section>
+  <section class="card">
+    <h2>2) Einmal-Code erzeugen</h2>
+    <button id="btnChallenge">Code erzeugen</button>
+    <div id="challengeOut" class="out"></div>
+  </section>
+  <section class="card">
+    <h2>3) Pairing & Verknüpfen</h2>
+    <button id="btnPairing">Pairing-Code erstellen</button>
+    <div id="pairingOut" class="out"></div>
+    <div class="row"><input id="pairingIn" placeholder="Pairing-Code"><input id="alexaUser" placeholder="Alexa User ID" value="alexa-user-xyz"><button id="btnLink">Verknüpfen</button></div>
+  </section>
+  <section class="card">
+    <h2>4) Verifizieren</h2>
+    <div class="row"><input id="codeIn" placeholder="Code"><input id="pinIn" placeholder="PIN"><input id="alexaUser2" placeholder="Alexa User ID" value="alexa-user-xyz"><button id="btnVerify">Check</button></div>
+    <div id="verifyOut" class="out"></div>
+  </section>
+  <footer>Demo — in-memory, keine Persistenz.</footer>
+</main>
+<script src="/script.js"></script>
+</body>
+</html>

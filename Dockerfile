@@ -5,7 +5,7 @@ COPY pom.xml ./
 RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests dependency:go-offline
 COPY src ./src
 COPY public ./public
-RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests package spring-boot:repackage
+RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests clean package spring-boot:repackage
 
 # ---------- runtime ----------
 FROM eclipse-temurin:21-jre
