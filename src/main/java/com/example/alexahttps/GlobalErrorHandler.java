@@ -19,10 +19,17 @@ public class GlobalErrorHandler {
         return Map.of("ok", false, "error", "security", "message", ex.getMessage());
     }
 
+    @ExceptionHandler(org.springframework.web.bind.MissingRequestHeaderException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String,Object> missingHeader(Exception ex){
+        log.warn("Missing required header: {}", ex.getMessage(), ex);
+        return Map.of("ok", false, "error", "missing_header");
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String,Object> handleGeneric(Exception ex){
-        log.error("Unhandled error in /alexa", ex);
+        log.error("Unhandled error in /alexa: {}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
         return Map.of("ok", false, "error", "internal");
     }
 }
