@@ -13,4 +13,4 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 ENV PORT=8080
 EXPOSE 8080
 COPY --from=build /app/target/*.jar app.jar
-CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar --server.port=${PORT}"]
+CMD ["sh","-c","java $JAVA_OPTS -jar app.jar --server.port=${PORT}"]
