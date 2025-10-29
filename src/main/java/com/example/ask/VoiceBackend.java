@@ -25,7 +25,7 @@ public class VoiceBackend {
     public boolean link(String pairingCode, String alexaUserId) {
         try {
             byte[] json = mapper.writeValueAsBytes(Map.of("pairingCode", pairingCode, "alexaUserId", alexaUserId));
-            var req = HttpRequest.newBuilder(URI.create(baseUrl + "/api/link/complete"))
+            var req = HttpRequest.newBuilder(URI.create(baseUrl + "/api/voice/link/complete"))
                     .timeout(Duration.ofSeconds(120))
                     .header("Content-Type","application/json")
                     .POST(HttpRequest.BodyPublishers.ofByteArray(json))
