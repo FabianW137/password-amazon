@@ -22,21 +22,39 @@ public class VoiceBackend {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length()-1) : baseUrl;
     }
 
-    public boolean link(String pairingCode, String alexaUserId) {
+    public boolean link(String code, String alexaUserId) {
         try {
-            byte[] json = mapper.writeValueAsBytes(Map.of("code", pairingCode, "alexaUserId", alexaUserId));;
+            byte[] json = mapper.writeValueAsBytes(Map.of(
+                    "code", code,
+                    "alexaUserId", alexaUserId
+            ));
+
             var req = HttpRequest.newBuilder(URI.create(baseUrl + "/api/voice/link/complete"))
-                    .timeout(Duration.ofSeconds(120))
-                    .header("Content-Type","application/json")
+                    .timeout(Duration.ofSeconds(5))
+                    .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofByteArray(json))
                     .build();
+
             var res = http.send(req, HttpResponse.BodyHandlers.ofByteArray());
             if (res.statusCode() != 200) return false;
-            Map<?,?> m = mapper.readValue(res.body(), Map.class);
-            Object ok = m.get("ok");
-            return (ok instanceof Boolean) ? (Boolean) ok : false;
-        } catch (Exception e) { return false; }
+
+            Map<String, Object> body = mapper.readValue(res.body(), Map.class);
+
+            // Backend liefert "ok"; zusätzlich tolerant auf "success"
+            if (body.containsKey("ok")) {
+                Object ok = body.get("ok");
+                return (ok instanceof Boolean) && (Boolean) ok;
+            }
+            if (body.containsKey("success")) {
+                Object success = body.get("success");
+                return (success instanceof Boolean) && (Boolean) success;
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
     }
+
 
     public Map<String,Object> verify(String code, String pin, String alexaUserId, String deviceId) {
         try {
