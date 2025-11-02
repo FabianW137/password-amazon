@@ -24,7 +24,7 @@ public class VoiceBackend {
     private final ObjectMapper mapper;
 
 
-    public VoiceBackend(@Value("${voice.backend.base-url}") String baseUrl) {
+    public VoiceBackend(@Value("${app.base-url}") String baseUrl) {
         this.baseUrl = sanitizeBaseUrl(baseUrl);
         this.http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
