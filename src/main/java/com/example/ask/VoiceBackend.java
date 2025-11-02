@@ -1,76 +1,148 @@
 package com.example.ask;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 
-@Component
-public class VoiceBackend {
-    private final String baseUrl;
-    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(4)).build();
-    private final ObjectMapper mapper = new ObjectMapper();
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-    public VoiceBackend(@Value("${app.base-url}") String baseUrl) {
-        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length()-1) : baseUrl;
+/**
+ * Schlanker HTTP-Client fürs Voice-Backend.
+ * Gibt konsistente Maps zurueck: { "ok": boolean, "message": string, ...optional payload... }
+ */
+public class VoiceBackend {
+
+    private static final String LINK_PATH   = "/api/voice/link/complete";
+    private static final String VERIFY_PATH = "/api/voice/verify";
+
+    private final String baseUrl;
+    private final HttpClient http;
+    private final ObjectMapper mapper;
+
+    /**
+     * @param baseUrl z.B. "https://example.com" (ohne abschließenden Slash; wird intern bereinigt)
+     */
+    public VoiceBackend(String baseUrl) {
+        this.baseUrl = sanitizeBaseUrl(baseUrl);
+        this.http = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5))
+                .build();
+        this.mapper = new ObjectMapper();
     }
 
-    public boolean link(String code, String alexaUserId) {
+    /**
+     * Verknuepft einen Alexa-User mit einem Account via sechsstelligen Code.
+     * Rueckgabe-Codes (message):
+     *  ok | bad-code | expired | alexa-id-already-linked | alexa-id-missing | http-XXX | network-error | legacy-boolean
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> link(String code, String alexaUserId) {
         try {
             byte[] json = mapper.writeValueAsBytes(Map.of(
                     "code", code,
                     "alexaUserId", alexaUserId
             ));
 
-            var req = HttpRequest.newBuilder(URI.create(baseUrl + "/api/voice/link/complete"))
-                    .timeout(Duration.ofSeconds(5))
+            HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + LINK_PATH))
+                    .timeout(Duration.ofSeconds(7))
                     .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofByteArray(json))
                     .build();
 
-            var res = http.send(req, HttpResponse.BodyHandlers.ofByteArray());
-            if (res.statusCode() != 200) return false;
-
-            Map<String, Object> body = mapper.readValue(res.body(), Map.class);
-
-            // Backend liefert "ok"; zusätzlich tolerant auf "success"
-            if (body.containsKey("ok")) {
-                Object ok = body.get("ok");
-                return (ok instanceof Boolean) && (Boolean) ok;
-            }
-            if (body.containsKey("success")) {
-                Object success = body.get("success");
-                return (success instanceof Boolean) && (Boolean) success;
-            }
-            return false;
+            HttpResponse<byte[]> res = http.send(req, HttpResponse.BodyHandlers.ofByteArray());
+            return toResponseMap(res);
         } catch (Exception e) {
-            return false;
+            return Map.of("ok", false, "message", "network-error");
         }
     }
 
-
-    public Map<String,Object> verify(String code, String pin, String alexaUserId, String deviceId) {
+    /**
+     * Anmeldung (Code + PIN). Erwartet konsistente Backend-Messages:
+     *  ok | bad-code | bad-pin | no-link | no-pin | locked | http-XXX | network-error | legacy-boolean
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> verify(String code, String pin, String alexaUserId, String deviceId) {
         try {
             byte[] json = mapper.writeValueAsBytes(Map.of(
-                    "code", code, "pin", pin, "alexaUserId", alexaUserId, "deviceId", deviceId
+                    "code", code,
+                    "pin", pin,
+                    "alexaUserId", alexaUserId,
+                    "deviceId", deviceId
             ));
-            var req = HttpRequest.newBuilder(URI.create(baseUrl + "/api/verify"))
-                    .timeout(Duration.ofSeconds(5))
-                    .header("Content-Type","application/json")
+
+            HttpRequest req = HttpRequest.newBuilder(URI.create(baseUrl + VERIFY_PATH))
+                    .timeout(Duration.ofSeconds(7))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofByteArray(json))
                     .build();
-            var res = http.send(req, HttpResponse.BodyHandlers.ofByteArray());
-            if (res.statusCode() != 200) return Map.of("success", false, "message", "http "+res.statusCode());
-            return mapper.readValue(res.body(), Map.class);
+
+            HttpResponse<byte[]> res = http.send(req, HttpResponse.BodyHandlers.ofByteArray());
+            return toResponseMap(res);
         } catch (Exception e) {
-            return Map.of("success", false, "message", "error");
+            return Map.of("ok", false, "message", "network-error");
         }
+    }
+
+    // -------------------- interne Hilfen --------------------
+
+    private static String sanitizeBaseUrl(String url) {
+        if (url == null || url.isBlank()) {
+            throw new IllegalArgumentException("baseUrl must not be null/blank");
+        }
+        String trimmed = url.trim();
+        // abschließenden Slash entfernen
+        while (trimmed.endsWith("/")) trimmed = trimmed.substring(0, trimmed.length() - 1);
+        return trimmed;
+    }
+
+    /**
+     * Vereinheitlicht die Rueckgabe:
+     *  - HTTP != 200  -> { ok:false, message:"http-<status>" }
+     *  - JSON-Map     -> direkt mappen
+     *  - "true"/"false" (legacy boolean bodies) -> in Map uebersetzen
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> toResponseMap(HttpResponse<byte[]> res) throws Exception {
+        if (res.statusCode() != 200) {
+            return Map.of("ok", false, "message", "http-" + res.statusCode());
+        }
+
+        byte[] body = res.body();
+        if (body == null || body.length == 0) {
+            return Map.of("ok", false, "message", "empty-body");
+        }
+
+        String asText = new String(body).trim();
+
+        // Legacy: nacktes "true"/"false"
+        if (!asText.startsWith("{")) {
+            boolean ok = "true".equalsIgnoreCase(asText);
+            return Map.of("ok", ok, "message", ok ? "ok" : "legacy-boolean");
+        }
+
+        // Normale JSON-Map
+        Map<String, Object> parsed = mapper.readValue(body, new TypeReference<Map<String, Object>>() {});
+        // Fallback-Sicherung: ok/message sicherstellen
+        Object okObj = parsed.get("ok");
+        Object msgObj = parsed.get("message");
+
+        boolean ok = (okObj instanceof Boolean) ? (Boolean) okObj : false;
+        String message = (msgObj instanceof String) ? (String) msgObj : (ok ? "ok" : "error");
+
+        // Original-Map plus garantierte Felder ok/message zurückgeben
+        if (!parsed.containsKey("ok") || !parsed.containsKey("message")) {
+            // neues Immutable-Map-Objekt bauen
+            return new java.util.HashMap<String, Object>(parsed) {{
+                put("ok", ok);
+                put("message", message);
+            }};
+        }
+        return parsed;
     }
 }
