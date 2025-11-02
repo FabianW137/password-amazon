@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class VoiceBackend {
 
     private static final String LINK_PATH   = "/api/voice/link/complete";
-    private static final String VERIFY_PATH = "/api/voice/verify";
+    private static final String VERIFY_PATH = "/api/verify";
 
     private final String baseUrl;
     private final HttpClient http;
