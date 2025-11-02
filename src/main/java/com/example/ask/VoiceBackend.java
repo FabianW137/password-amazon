@@ -9,11 +9,10 @@ import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.stereotype.Component;
 
-/**
- * Schlanker HTTP-Client fürs Voice-Backend.
- * Gibt konsistente Maps zurueck: { "ok": boolean, "message": string, ...optional payload... }
- */
+
+@Component
 public class VoiceBackend {
 
     private static final String LINK_PATH   = "/api/voice/link/complete";
@@ -23,9 +22,7 @@ public class VoiceBackend {
     private final HttpClient http;
     private final ObjectMapper mapper;
 
-    /**
-     * @param baseUrl z.B. "https://example.com" (ohne abschließenden Slash; wird intern bereinigt)
-     */
+
     public VoiceBackend(String baseUrl) {
         this.baseUrl = sanitizeBaseUrl(baseUrl);
         this.http = HttpClient.newBuilder()
@@ -34,12 +31,7 @@ public class VoiceBackend {
         this.mapper = new ObjectMapper();
     }
 
-    /**
-     * Verknuepft einen Alexa-User mit einem Account via sechsstelligen Code.
-     * Rueckgabe-Codes (message):
-     *  ok | bad-code | expired | alexa-id-already-linked | alexa-id-missing | http-XXX | network-error | legacy-boolean
-     */
-    @SuppressWarnings("unchecked")
+
     public Map<String, Object> link(String code, String alexaUserId) {
         try {
             byte[] json = mapper.writeValueAsBytes(Map.of(
@@ -61,11 +53,7 @@ public class VoiceBackend {
         }
     }
 
-    /**
-     * Anmeldung (Code + PIN). Erwartet konsistente Backend-Messages:
-     *  ok | bad-code | bad-pin | no-link | no-pin | locked | http-XXX | network-error | legacy-boolean
-     */
-    @SuppressWarnings("unchecked")
+
     public Map<String, Object> verify(String code, String pin, String alexaUserId, String deviceId) {
         try {
             byte[] json = mapper.writeValueAsBytes(Map.of(
@@ -101,13 +89,7 @@ public class VoiceBackend {
         return trimmed;
     }
 
-    /**
-     * Vereinheitlicht die Rueckgabe:
-     *  - HTTP != 200  -> { ok:false, message:"http-<status>" }
-     *  - JSON-Map     -> direkt mappen
-     *  - "true"/"false" (legacy boolean bodies) -> in Map uebersetzen
-     */
-    @SuppressWarnings("unchecked")
+
     private Map<String, Object> toResponseMap(HttpResponse<byte[]> res) throws Exception {
         if (res.statusCode() != 200) {
             return Map.of("ok", false, "message", "http-" + res.statusCode());
