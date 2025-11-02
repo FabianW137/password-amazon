@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 
@@ -23,7 +24,7 @@ public class VoiceBackend {
     private final ObjectMapper mapper;
 
 
-    public VoiceBackend(String baseUrl) {
+    public VoiceBackend(@Value("${voice.backend.base-url}") String baseUrl) {
         this.baseUrl = sanitizeBaseUrl(baseUrl);
         this.http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(5))
