@@ -20,7 +20,7 @@ public class SkillConfig {
           SessionEndedHandler ended
   ) {
     return Skills.standard()
-            .withSkillId(skillId)                // aktiviert ApplicationId-Prüfung
+            .withSkillId(skillId)                
             .addRequestHandlers(
                     launch, link, auth, cancelStop, fallback, ended
             )

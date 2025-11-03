@@ -78,14 +78,12 @@ public class VoiceBackend {
         }
     }
 
-    // -------------------- interne Hilfen --------------------
 
     private static String sanitizeBaseUrl(String url) {
         if (url == null || url.isBlank()) {
             throw new IllegalArgumentException("baseUrl must not be null/blank");
         }
         String trimmed = url.trim();
-        // abschließenden Slash entfernen
         while (trimmed.endsWith("/")) trimmed = trimmed.substring(0, trimmed.length() - 1);
         return trimmed;
     }
@@ -103,24 +101,19 @@ public class VoiceBackend {
 
         String asText = new String(body).trim();
 
-        // Legacy: nacktes "true"/"false"
         if (!asText.startsWith("{")) {
             boolean ok = "true".equalsIgnoreCase(asText);
             return Map.of("ok", ok, "message", ok ? "ok" : "legacy-boolean");
         }
 
-        // Normale JSON-Map
         Map<String, Object> parsed = mapper.readValue(body, new TypeReference<Map<String, Object>>() {});
-        // Fallback-Sicherung: ok/message sicherstellen
         Object okObj = parsed.get("ok");
         Object msgObj = parsed.get("message");
 
         boolean ok = (okObj instanceof Boolean) ? (Boolean) okObj : false;
         String message = (msgObj instanceof String) ? (String) msgObj : (ok ? "ok" : "error");
 
-        // Original-Map plus garantierte Felder ok/message zurückgeben
         if (!parsed.containsKey("ok") || !parsed.containsKey("message")) {
-            // neues Immutable-Map-Objekt bauen
             return new java.util.HashMap<String, Object>(parsed) {{
                 put("ok", ok);
                 put("message", message);

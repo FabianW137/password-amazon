@@ -26,8 +26,8 @@ public class AuthenticateIntentHandler implements RequestHandler {
 
     // src/main/java/com/example/ask/AuthenticateIntentHandler.java
     private static final String AUTHENTICATE_INTENT = "AuthenticateIntent";
-    private static final String SLOT_CODE = "OneTimeCode";   // <- angepasst
-    private static final String SLOT_PIN  = "Pin";           // <- angepasst
+    private static final String SLOT_CODE = "OneTimeCode";   
+    private static final String SLOT_PIN  = "Pin";           
 
     @Override
     public Optional<Response> handle(HandlerInput input) {
@@ -37,7 +37,7 @@ public class AuthenticateIntentHandler implements RequestHandler {
         String codeSpoken = getSlotValue(ir, SLOT_CODE);
         String pinSpoken  = getSlotValue(ir, SLOT_PIN);
 
-        // Nur Ziffern
+        
         String code = codeSpoken == null ? "" : codeSpoken.replaceAll("\\D", "");
         String pin  = pinSpoken  == null ? "" : pinSpoken.replaceAll("\\D", "");
 
@@ -101,7 +101,6 @@ public class AuthenticateIntentHandler implements RequestHandler {
                     .build();
         }
     }
-    // Gibt null zurück, wenn beim Zugriff irgendwo NPE/IllegalState o.ä. fliegt
     private static <T> T safe(Supplier<T> expr) {
         try {
             return expr.get();
@@ -112,7 +111,6 @@ public class AuthenticateIntentHandler implements RequestHandler {
         }
     }
 
-    // Variante mit Fallback
     private static <T> T safe(Supplier<T> expr, T fallback) {
         try {
             T v = expr.get();
@@ -129,7 +127,6 @@ public class AuthenticateIntentHandler implements RequestHandler {
         Slot s = slots.get(slotName);
         if (s == null) return null;
 
-        // 1) Entity Resolution: wenn es einen erfolgreichen Match gibt, nimm den kanonischen Namen
         Resolutions res = s.getResolutions();
         if (res != null && res.getResolutionsPerAuthority() != null) {
             for (Resolution r : res.getResolutionsPerAuthority()) {
@@ -143,7 +140,6 @@ public class AuthenticateIntentHandler implements RequestHandler {
             }
         }
 
-        // 2) Fallback: Rohwert des Slots
         String raw = s.getValue();
         return (raw == null || raw.isBlank()) ? null : raw;
     }

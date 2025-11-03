@@ -21,7 +21,6 @@ Direkter Alexa-Endpoint **ohne Lambda**, inkl. **Signatur- und Zertifikatsprüfu
 ## Lokaler Test
 ```bash
 mvn spring-boot:run
-# POST http://localhost:8080/alexa  (ohne Signaturprüfung nur, wenn du die Verifier Config überschreibst)
 ```
 
 ## Endpunkt

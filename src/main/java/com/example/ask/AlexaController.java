@@ -24,13 +24,10 @@ public class AlexaController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<byte[]> handle(@RequestBody byte[] body) throws Exception {
-        // JSON → RequestEnvelope
         RequestEnvelope req = mapper.readValue(body, RequestEnvelope.class);
 
-        // Skill ausführen
         ResponseEnvelope resp = skill.invoke(req);
 
-        // ResponseEnvelope → JSON
         byte[] json = mapper.writeValueAsBytes(resp);
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(json);
     }
